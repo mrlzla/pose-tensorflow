@@ -99,6 +99,7 @@ class PoseDataset:
 
     def load_dataset(self):
         cfg = self.cfg
+        #import ipdb; ipdb.set_trace()
         file_name = cfg.dataset
         # Load Matlab file dataset annotation
         mlab = sio.loadmat(file_name)
@@ -114,7 +115,7 @@ class PoseDataset:
 
             item = DataItem()
             item.image_id = i
-            item.im_path = sample[0][0]
+            item.im_path = '../' + sample[0][0]
             item.im_size = sample[1][0]
             if len(sample) >= 3:
                 joints = sample[2][0][0]

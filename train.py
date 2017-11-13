@@ -1,3 +1,4 @@
+import os
 import logging
 import threading
 
@@ -6,12 +7,14 @@ import tensorflow.contrib.slim as slim
 
 from config import load_config
 from dataset.factory import create as create_dataset
+from dataset.pose_dataset import Batch
 from nnet.net_factory import pose_net
 from nnet.pose_net import get_batch_spec
 from util.logging import setup_logging
 
 
 class LearningRate(object):
+
     def __init__(self, cfg):
         self.steps = cfg.multi_step
         self.current_step = 0
@@ -25,13 +28,14 @@ class LearningRate(object):
 
 
 def setup_preloading(batch_spec):
-    placeholders = {name: tf.placeholder(tf.float32, shape=spec) for (name, spec) in batch_spec.items()}
+    placeholders = {name: tf.placeholder(tf.float32, shape=spec) for (
+        name, spec) in batch_spec.items()}
     names = placeholders.keys()
     placeholders_list = list(placeholders.values())
 
     QUEUE_SIZE = 20
 
-    q = tf.FIFOQueue(QUEUE_SIZE, [tf.float32]*len(batch_spec))
+    q = tf.FIFOQueue(QUEUE_SIZE, [tf.float32] * len(batch_spec))
     enqueue_op = q.enqueue(placeholders_list)
     batch_list = q.dequeue()
 
@@ -63,7 +67,8 @@ def get_optimizer(loss_op, cfg):
     learning_rate = tf.placeholder(tf.float32, shape=[])
 
     if cfg.optimizer == "sgd":
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
+        optimizer = tf.train.MomentumOptimizer(
+            learning_rate=learning_rate, momentum=0.9)
     elif cfg.optimizer == "adam":
         optimizer = tf.train.AdamOptimizer(cfg.adam_lr)
     else:
@@ -88,10 +93,14 @@ def train():
     for k, t in losses.items():
         tf.summary.scalar(k, t)
     merged_summaries = tf.summary.merge_all()
-
-    variables_to_restore = slim.get_variables_to_restore(include=["resnet_v1"])
+    if cfg.net_type != 'mobilenet':
+        variables_to_restore = slim.get_variables_to_restore(include=[
+                                                             "resnet_v1"])
+    else:
+        variables_to_restore = slim.get_variables_to_restore(
+            include=["MobilenetV1"])
     restorer = tf.train.Saver(variables_to_restore)
-    saver = tf.train.Saver(max_to_keep=5)
+    saver = tf.train.Saver(max_to_keep=None)
 
     sess = tf.Session()
 
@@ -113,7 +122,7 @@ def train():
     cum_loss = 0.0
     lr_gen = LearningRate(cfg)
 
-    for it in range(max_iter+1):
+    for it in range(max_iter + 1):
         current_lr = lr_gen.get_lr(it)
         [_, loss_val, summary] = sess.run([train_op, total_loss, merged_summaries],
                                           feed_dict={learning_rate: current_lr})
@@ -128,7 +137,7 @@ def train():
 
         # Save snapshot
         if (it % cfg.save_iters == 0 and it != 0) or it == max_iter:
-            model_name = cfg.snapshot_prefix
+            model_name = os.path.join(cfg.log_dir, cfg.snapshot_prefix)
             saver.save(sess, model_name, global_step=it)
 
     sess.close()

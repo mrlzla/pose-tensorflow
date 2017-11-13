@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-from scipy.misc import imresize
+from scipy.misc import imresize, imsave
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -15,8 +15,8 @@ def _npcircle(image, cx, cy, radius, color, transparency=0.0):
     cy = int(cy)
     y, x = np.ogrid[-radius: radius, -radius: radius]
     index = x**2 + y**2 <= radius**2
-    image[cy-radius:cy+radius, cx-radius:cx+radius][index] = (
-        image[cy-radius:cy+radius, cx-radius:cx+radius][index].astype('float32') * transparency +
+    image[cy - radius:cy + radius, cx - radius:cx + radius][index] = (
+        image[cy - radius:cy + radius, cx - radius:cx + radius][index].astype('float32') * transparency +
         np.array(color).astype('float32') * (1.0 - transparency)).astype('uint8')
 
 
@@ -34,7 +34,8 @@ def visualize_joints(image, pose):
 
     visim = image.copy()
     colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [0, 245, 255], [255, 131, 250], [255, 255, 0],
-              [255, 0, 0], [0, 255, 0], [0, 0, 255], [0, 245, 255], [255, 131, 250], [255, 255, 0],
+              [255, 0, 0], [0, 255, 0], [0, 0, 255], [
+                  0, 245, 255], [255, 131, 250], [255, 255, 0],
               [0, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255]]
     for p_idx in range(num_joints):
         cur_x = pose[p_idx, 0]
@@ -53,7 +54,7 @@ def show_heatmaps(cfg, img, scmap, pose, cmap="jet"):
     all_joints = cfg.all_joints
     all_joints_names = cfg.all_joints_names
     subplot_width = 3
-    subplot_height = math.ceil((len(all_joints) + 1) / subplot_width)
+    subplot_height = int(math.ceil((len(all_joints) + 1) / subplot_width))
     f, axarr = plt.subplots(subplot_height, subplot_width)
     for pidx, part in enumerate(all_joints):
         plot_j = (pidx + 1) // subplot_width
@@ -70,9 +71,11 @@ def show_heatmaps(cfg, img, scmap, pose, cmap="jet"):
     curr_plot = axarr[0, 0]
     curr_plot.set_title('Pose')
     curr_plot.axis('off')
+    imsave('out.png', visualize_joints(img, pose))
     curr_plot.imshow(visualize_joints(img, pose))
 
     plt.show()
+
 
 def show_arrows(cfg, img, pose, arrows):
     fig = plt.figure()
@@ -80,25 +83,30 @@ def show_arrows(cfg, img, pose, arrows):
     plt.imshow(img)
     a.set_title('Initial Image')
 
-
     b = fig.add_subplot(2, 2, 2)
     plt.imshow(img)
     b.set_title('Predicted Pairwise Differences')
 
-    color_opt=['r', 'g', 'b', 'c', 'm', 'y', 'k']
+    color_opt = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
     joint_pairs = [(6, 5), (6, 11), (6, 8), (6, 15), (6, 0)]
     color_legends = []
     for id, joint_pair in enumerate(joint_pairs):
-        end_joint_side = ("r " if joint_pair[1] % 2 == 0 else "l ") if joint_pair[1] != 0 else ""
-        end_joint_name = end_joint_side + cfg.all_joints_names[int(math.ceil(joint_pair[1] / 2))]
+        end_joint_side = ("r " if joint_pair[1] % 2 == 0 else "l ") if joint_pair[
+            1] != 0 else ""
+        end_joint_name = end_joint_side + \
+            cfg.all_joints_names[int(math.ceil(joint_pair[1] / 2))]
         start = arrows[joint_pair][0]
         end = arrows[joint_pair][1]
-        b.arrow(start[0], start[1], end[0]-start[0], end[1]-start[1], head_width=3, head_length=6, fc=color_opt[id], ec=color_opt[id], label=end_joint_name)
-        color_legend = mpatches.Patch(color=color_opt[id], label=end_joint_name)
+        b.arrow(start[0], start[1], end[0] - start[0], end[1] - start[1], head_width=3,
+                head_length=6, fc=color_opt[id], ec=color_opt[id], label=end_joint_name)
+        color_legend = mpatches.Patch(
+            color=color_opt[id], label=end_joint_name)
         color_legends.append(color_legend)
 
-    plt.legend(handles=color_legends, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.legend(handles=color_legends, bbox_to_anchor=(
+        1.05, 1), loc=2, borderaxespad=0.)
     plt.show()
+
 
 def waitforbuttonpress():
     plt.waitforbuttonpress(timeout=1)

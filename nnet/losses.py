@@ -6,7 +6,7 @@ from tensorflow.python.framework import ops
 import tensorflow.contrib.losses as tf_losses
 
 
-def huber_loss(labels, predictions, weight=1.0, k=1.0, scope=None):
+def huber_loss(labels, predictions, weight=1.0, k=1, scope=None):
     """Define a huber loss  https://en.wikipedia.org/wiki/Huber_loss
       tensor: tensor to regularize.
       k: value of k in the huber loss
