@@ -62,7 +62,7 @@ class PoseNet:
         if self.cfg.net_type != 'mobilenet':
             with slim.arg_scope(resnet_v1.resnet_arg_scope(False)):
                 net, end_points = net_fun(im_centered,
-                                          global_pool=False, output_stride=16)
+                                          global_pool=False, output_stride=16, is_training=False)
         else:
             with slim.arg_scope(mobilenet_v1.mobilenet_v1_arg_scope(False)):
                 net, end_points = net_fun(im_centered, output_stride=16)
@@ -83,7 +83,7 @@ class PoseNet:
                 out['pairwise_pred'] = prediction_layer(cfg, features, 'pairwise_pred',
                                                         cfg.num_joints * (cfg.num_joints - 1) * 2)
             if cfg.intermediate_supervision and not no_interm:
-                #import ipdb; ipdb.set_trace()
+                # import ipdb; ipdb.set_trace()
                 if 'resnet' in cfg.net_type:
                     num_layers = re.findall("resnet_([0-9]*)", cfg.net_type)[0]
                     layer_name = 'resnet_v1_{}'.format(
